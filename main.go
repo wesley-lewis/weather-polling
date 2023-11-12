@@ -12,6 +12,40 @@ const (
 	endpoint = "https://api.open-meteo.com/v1/forecast"
 )
 
+type Sender interface {
+	Send(*WeatherData) error
+}
+
+type SMSSender struct {
+	number string
+}
+
+func NewSMSSender(number string) *SMSSender {
+	return &SMSSender{
+		number,
+	}
+}
+
+func (s *SMSSender) Send(data *WeatherData) error {
+	fmt.Println("Sender weather to number: ", s.number)
+	return nil
+}
+
+type EmailSender struct {
+	email string
+}
+
+func NewEmailSender(email string) *EmailSender {
+	return &EmailSender{
+		email: email,
+	}
+}
+
+func (es *EmailSender) Send(data *WeatherData) error {
+	fmt.Println("Sending email to: ", es.email)
+	return nil
+}
+
 var (
 	pollInterval = time.Second * 5
 )
@@ -23,11 +57,13 @@ type WeatherData struct {
 
 type WPoller struct {
 	closech chan struct{}
+	senders []Sender
 }
 
-func NewWPoller() *WPoller {
+func NewWPoller(senders ...Sender) *WPoller {
 	return &WPoller{
 		closech: make(chan struct{}),
+		senders: senders,
 	}
 }
 
@@ -62,8 +98,12 @@ outer:
 }
 
 func (wp *WPoller) handleData(data *WeatherData) error {
-	fmt.Println(data)
-
+	// handle the data (store it in DB maybe)
+	for _, s := range wp.senders {
+		if err := s.Send(data); err != nil {
+			fmt.Println(err)
+		}
+	}
 	return nil
 }
 
@@ -87,13 +127,12 @@ func getWeatherResults(lat, long float64) (*WeatherData, error) {
 }
 
 func main() {
-	wpoller := NewWPoller()
+	smsSender := NewSMSSender("1231150813")
+	emailSender := NewEmailSender("wesley@gmail.com")
+	wpoller := NewWPoller(smsSender, emailSender)
 	go func() {
 		wpoller.start()
 	}()
 
-	time.Sleep(time.Second * 3)
-
-	wpoller.close()
 	select {}
 }
