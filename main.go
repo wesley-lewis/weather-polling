@@ -22,34 +22,49 @@ type WeatherData struct {
 }
 
 type WPoller struct {
+	closech chan struct{}
 }
 
 func NewWPoller() *WPoller {
-	return &WPoller{}
+	return &WPoller{
+		closech: make(chan struct{}),
+	}
+}
+
+func (wp *WPoller) close() {
+	close(wp.closech)
 }
 
 func (wp *WPoller) start() {
 	fmt.Println("Starting the wpoller")
 
 	ticker := time.NewTicker(pollInterval)
+outer:
 	for {
-		data, err := getWeatherResults(52.52, 13.41)
+		select {
+		case <-ticker.C:
+			data, err := getWeatherResults(52.52, 13.41)
 
-		if err != nil {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if err := wp.handleData(data); err != nil {
+				log.Fatal(err)
+			}
+		case <-wp.closech:
+			// handle the graceful shutdown
+			break outer
 		}
-		fmt.Println(data)
-		<-ticker.C
 	}
+
+	fmt.Println("wpoller stopped gracefully")
 }
 
-func (wp *WPoller) handleData(data *WeatherData) {
+func (wp *WPoller) handleData(data *WeatherData) error {
+	fmt.Println(data)
 
-}
-
-func main() {
-	wp := NewWPoller()
-	wp.start()
+	return nil
 }
 
 func getWeatherResults(lat, long float64) (*WeatherData, error) {
@@ -69,4 +84,13 @@ func getWeatherResults(lat, long float64) (*WeatherData, error) {
 	}
 
 	return &data, nil
+}
+
+func main() {
+	wpoller := NewWPoller()
+	go func() {
+		wpoller.start()
+	}()
+
+	select {}
 }
