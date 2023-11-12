@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+)
+
+const (
+	endpoint = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m"
 )
 
 type Data struct {
@@ -13,17 +16,21 @@ type Data struct {
 }
 
 func main() {
-	endpoint := "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&hourly=temperature_2m"
+
+}
+
+func getWeatherResults(lat, long float64) (*Data, error) {
 
 	resp, err := http.Get(endpoint)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var data Data
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	fmt.Println(data)
+	return &data, nil
 }
