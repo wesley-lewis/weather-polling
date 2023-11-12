@@ -16,7 +16,7 @@ var (
 	pollInterval = time.Second * 5
 )
 
-type Data struct {
+type WeatherData struct {
 	Elevation float64        `json:"elevation"`
 	Hourly    map[string]any `json:"hourly"`
 }
@@ -29,6 +29,8 @@ func NewWPoller() *WPoller {
 }
 
 func (wp *WPoller) start() {
+	fmt.Println("Starting the wpoller")
+
 	ticker := time.NewTicker(pollInterval)
 	for {
 		data, err := getWeatherResults(52.52, 13.41)
@@ -41,12 +43,16 @@ func (wp *WPoller) start() {
 	}
 }
 
+func (wp *WPoller) handleData(data *WeatherData) {
+
+}
+
 func main() {
 	wp := NewWPoller()
 	wp.start()
 }
 
-func getWeatherResults(lat, long float64) (*Data, error) {
+func getWeatherResults(lat, long float64) (*WeatherData, error) {
 
 	uri := fmt.Sprintf("%s?latitude=%.2f&longitude=%.2f&hourly=temperature_2m", endpoint, lat, long)
 
@@ -57,7 +63,7 @@ func getWeatherResults(lat, long float64) (*Data, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var data Data
+	var data WeatherData
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
