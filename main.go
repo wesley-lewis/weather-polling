@@ -92,5 +92,8 @@ func main() {
 		wpoller.start()
 	}()
 
+	time.Sleep(time.Second * 3)
+
+	wpoller.close()
 	select {}
 }
