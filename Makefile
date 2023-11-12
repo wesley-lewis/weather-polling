@@ -1,6 +1,6 @@
-run: 
+run: build
 	./bin/weather-polling
 
-build: build
+build: 
 	go build -o bin/weather-polling
 
